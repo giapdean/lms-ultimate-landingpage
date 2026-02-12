@@ -6,6 +6,7 @@ const SEPAY_CONFIG = {
   accountName: 'TA THIET GIAP',
   bankCode: 'TPB',
   apiToken: '5LKGZR3YANUO2VQY81IEMJP6WQEDGXTMU8JKKZRSKUJQTL5GAY4TGQDTHVFAD3CN',
+  rapidApiKey: '19e1e36dcemshb888996018daff6p101216jsn49b3e583a1a7'
 };
 
 const ZALO_GROUP_LINK = "https://zalo.me/g/uyaqhe591";
@@ -95,6 +96,12 @@ function doPost(e) {
         logVisit(data);
         return createJSONOutput({ success: true });
       }
+      else if (action === 'play_game') {
+        return createJSONOutput(handleGameSubmission(data.url));
+      }
+      else if (action === 'check_discount') {
+        return createJSONOutput(checkDiscountCode(data.code));
+      }
 
       return createJSONOutput({ success: false, message: 'Unknown action' });
 
@@ -140,7 +147,28 @@ function submitRegistration(params) {
     } else if (pkg === 'basic') {
       amount = 499000;
     } else if (pkg === 'vip') {
-      amount = 699000;
+      amount = 30000000; // Giá gốc VIP
+    }
+
+    // XỬ LÝ MÃ GIẢM GIÁ
+    var discountCode = params.discountCode;
+    var appliedDiscount = false;
+    
+    if (discountCode) {
+       console.log('🔍 [SubmitReg] Checking discount code:', discountCode);
+       var discountResult = validateAndUseVoucher(discountCode);
+       if (discountResult.valid) {
+          console.log('✅ [SubmitReg] Code valid. Applying discount.');
+          if (pkg === 'vip') amount = 699000;
+          else if (pkg === 'basic') amount = 499000;
+          appliedDiscount = true;
+       } else {
+          console.log('❌ [SubmitReg] Code invalid:', discountResult.reason);
+       }
+    } else {
+        // Nếu không có mã, áp dụng giá gốc mặc định mới (theo yêu cầu user)
+        if (pkg === 'vip') amount = 3000000;
+        else if (pkg === 'basic') amount = 2150000;
     }
 
     sheet.appendRow([
@@ -154,7 +182,8 @@ function submitRegistration(params) {
       amount,
       'pending',
       '',
-      ''
+      '',
+      appliedDiscount ? discountCode : '' // Cột L: DiscountCode
     ]);
 
     var qrUrl = `https://img.vietqr.io/image/${SEPAY_CONFIG.bankCode}-${SEPAY_CONFIG.accountNumber}-compact.png?amount=${amount}&addInfo=${transactionCode}&accountName=${encodeURIComponent(SEPAY_CONFIG.accountName)}`;
@@ -399,4 +428,122 @@ function sendSuccessEmail(email, name, phone, packageType, code, amount) {
   } catch (e) {
     Logger.log("Email Error: " + e.toString());
   }
+}
+
+// ==========================================
+// 6. MODULE: SHARE TO GET DISCOUNT
+// ==========================================
+
+function handleGameSubmission(postUrl) {
+  console.log('🔍 [Game] 1. Start. URL:', postUrl);
+  try {
+    if (!postUrl || !postUrl.includes('facebook.com')) {
+       return { success: false, message: 'Link không hợp lệ. Vui lòng nhập link bài viết Facebook.' };
+    }
+
+    // 1. Gọi RapidAPI verify
+    var apiUrl = 'https://facebook-scraper3.p.rapidapi.com/post?post_url=' + encodeURIComponent(postUrl);
+    var options = {
+      method: 'get',
+      headers: {
+        'x-rapidapi-host': 'facebook-scraper3.p.rapidapi.com',
+        'x-rapidapi-key': SEPAY_CONFIG.rapidApiKey
+      },
+      muteHttpExceptions: true
+    };
+
+    console.log('🔍 [Game] 2. Calling RapidAPI...');
+    var response = UrlFetchApp.fetch(apiUrl, options);
+    var json = JSON.parse(response.getContentText());
+    console.log('🔍 [Game] 3. API Response Code:', response.getResponseCode());
+
+    if (!json.results) {
+       console.log('❌ [Game] API Error:', json);
+       return { success: false, message: 'Không thể kiểm tra bài viết. Vui lòng thử lại sau.' };
+    }
+
+    var postData = json.results;
+    
+    // 2. Validate điều kiện: Share bài của Tạ Thiết Giáp (ID: 100009825078160)
+    // Logic: User share bài -> Post của User chứa attached_post là bài của Giáp
+    var attachedPost = postData.attached_post;
+    
+    if (!attachedPost || !attachedPost.author || attachedPost.author.id !== '100009825078160') {
+        console.log('❌ [Game] Invalid Share. Attached Post Author:', attachedPost ? attachedPost.author : 'No Attached Post');
+        return { success: false, message: 'Bạn chưa share đúng bài viết quy định hoặc để chế độ riêng tư.' };
+    }
+    
+    console.log('✅ [Game] 4. Share Validated.');
+
+    // 3. Tạo/Lấy Voucher
+    // Dùng ID bài viết của người share làm mã code (đảm bảo duy nhất mỗi bài 1 code)
+    var voucherCode = 'SHARE_' + postData.post_id; 
+    
+    // Lưu vào Sheet Vouchers
+    saveVoucher(voucherCode);
+    
+    return { success: true, code: voucherCode };
+
+  } catch (e) {
+    console.log('❌ [Game] Error:', e.toString());
+    return { success: false, message: 'Lỗi hệ thống: ' + e.toString() };
+  }
+}
+
+function saveVoucher(code) {
+  var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
+  var sheet = ss.getSheetByName('Vouchers') || ss.insertSheet('Vouchers');
+  
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(['Code', 'Status', 'CreatedAt', 'UsedAt', 'UsedBy']);
+  }
+  
+  // Check if exists
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] == code) {
+       console.log('ℹ️ [Voucher] Code already exists:', code);
+       return; // Đã tồn tại -> Không tạo mới (User có thể lấy lại code cũ từ bài share đó)
+    }
+  }
+  
+  sheet.appendRow([code, 'Active', new Date(), '', '']);
+  console.log('✅ [Voucher] Created new code:', code);
+}
+
+function validateAndUseVoucher(code) {
+  var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
+  var sheet = ss.getSheetByName('Vouchers');
+  if (!sheet) return { valid: false, reason: 'System Error: Voucher DB missing' };
+  
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] == code) {
+       if (data[i][1] === 'Used') {
+          return { valid: false, reason: 'Mã đã được sử dụng.' };
+       }
+       // Mark as Used
+       sheet.getRange(i + 1, 2).setValue('Used');
+       sheet.getRange(i + 1, 4).setValue(new Date());
+       return { valid: true };
+    }
+  }
+  return { valid: false, reason: 'Mã không tồn tại.' };
+}
+
+function checkDiscountCode(code) {
+   // Hàm này chỉ để frontend check trước khi submit (Visual feedback)
+   // KHÔNG mark as used ở đây. Chỉ check status.
+  var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
+  var sheet = ss.getSheetByName('Vouchers');
+  if (!sheet) return { success: false, message: 'Mã không tồn tại' };
+  
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] == code) {
+       if (data[i][1] === 'Used') return { success: false, message: 'Mã đã được sử dụng' };
+       return { success: true, message: 'Mã hợp lệ. Giảm 76.7%' };
+    }
+  }
+  return { success: false, message: 'Mã không tồn tại' };
 }

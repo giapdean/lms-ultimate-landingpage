@@ -859,15 +859,20 @@
             <!-- Basic Plan -->
             <div class="pricing-card">
                 <h3>Gói Source Code</h3>
-                <div class="price-tag">499K <span
-                        style="font-size:16px; color:#a1a1aa; text-decoration:line-through; margin-left:8px">1.200K</span>
-                </div>
+                <div class="price-tag">2.150K</div>
                 <p style="color:var(--text-sub);font-size:13px; margin-bottom:24px">Dành cho Developer hoặc người đã
                     biết Google Apps Script.</p>
-                <a href="#" class="btn btn-glass" style="width:100%" onclick="openPaymentModal('basic')">Chọn Gói
-                    Basic</a>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary"
+                        style="width:100%; background: linear-gradient(90deg, #F59E0B, #D97706);"
+                        onclick="openGameModal()">
+                        <i data-lucide="gift" style="width: 16px; margin-right: 5px;"></i> Săn Code Giảm 76.7%
+                    </button>
+                </div>
+                <a href="#" class="btn btn-glass" style="width:100%" onclick="openPaymentModal('basic')">Mua Ngay (Giá
+                    Gốc)</a>
                 <ul class="check-list">
-                    <li><i data-lucide="check"></i> Full Source Code (Frontend + Backend)</li>
+                    <li><i data-lucide="check"></i> Full Source Code (Frontend + Backend "mã hóa")</li>
                     <li><i data-lucide="check"></i> Tài liệu hướng dẫn cài đặt file Word</li>
                     <li><i data-lucide="check"></i> Được tham gia nhóm Zalo hỗ trợ chung</li>
                     <li style="opacity:0.5"><i data-lucide="x"></i> Không bao gồm Setup 1-1</li>
@@ -881,12 +886,18 @@
                     style="position:absolute; top:0; left:0; width:100%; text-align:center; background:rgba(220,38,38,0.2); color:#fca5a5; font-size:12px; font-weight:bold; padding:8px 0;">
                     BÁN CHẠY NHẤT</div>
                 <h3>Full Combo VIP</h3>
-                <div class="price-tag text-accent">699K <span
-                        style="font-size:16px; color:#a1a1aa; text-decoration:line-through; margin-left:8px">3.000.000đ</span>
-                </div>
+                <div class="price-tag text-accent">3.000K</div>
                 <p style="color:var(--text-sub);font-size:13px; margin-bottom:24px">Giải pháp trọn gói + Hỗ trợ tận
                     răng.</p>
-                <a href="#" class="btn btn-primary" style="width:100%" onclick="openPaymentModal('vip')">Mua Ngay</a>
+                <div style="margin-bottom: 20px;">
+                    <button class="btn btn-primary"
+                        style="width:100%; background: linear-gradient(90deg, #F59E0B, #D97706);"
+                        onclick="openGameModal()">
+                        <i data-lucide="gift" style="width: 16px; margin-right: 5px;"></i> Săn Code Giảm 76.7%
+                    </button>
+                </div>
+                <a href="#" class="btn btn-glass" style="width:100%; border-color: var(--accent); color: var(--accent);"
+                    onclick="openPaymentModal('vip')">Mua Ngay (Giá Gốc)</a>
                 <ul class="check-list">
                     <li><i data-lucide="check" style="color:var(--accent)"></i> <strong>Mọi quyền lợi gói Basic</strong>
                     </li>
@@ -976,6 +987,19 @@
                             điện thoại</label>
                         <input type="tel" name="phone" required
                             style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: white;">
+                    </div>
+
+                    <!-- Discount Code Section -->
+                    <div style="margin-bottom: 24px;">
+                        <label style="display: block; color: var(--text-sub); margin-bottom: 8px; font-size: 14px;">Mã
+                            Giảm Giá</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="discount-code" name="discountCode" placeholder="Nhập mã..."
+                                style="flex: 1; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: white;">
+                            <button type="button" onclick="applyDiscount()" class="btn btn-glass"
+                                style="padding: 0 20px; font-size: 14px;">Áp Dụng</button>
+                        </div>
+                        <p id="discount-msg" style="font-size: 12px; margin-top: 8px; min-height: 18px;"></p>
                     </div>
 
                     <button type="submit" id="btn-submit" class="btn btn-primary" style="width: 100%;">Tiếp tục thanh
@@ -1106,12 +1130,16 @@
             const pkgInput = document.getElementById('pkg-input');
             const pkgName = document.getElementById('pkg-name-display');
 
-            // Set giá trị gói
+            // Reset discount
+            document.getElementById('discount-code').value = '';
+            document.getElementById('discount-msg').innerText = '';
+
+            // Set giá trị gói & Hiển thị giá gốc
             pkgInput.value = packageType;
             if (packageType === 'basic') {
-                pkgName.innerText = 'Gói Source Code (499K)';
+                pkgName.innerHTML = 'Gói Source Code<br><span id="pkg-price-display" style="color:white; font-size:18px; font-weight:bold">2.150.000đ</span>';
             } else {
-                pkgName.innerText = 'Full Combo VIP (699K)';
+                pkgName.innerHTML = 'Full Combo VIP<br><span id="pkg-price-display" style="color:var(--accent); font-size:18px; font-weight:bold">3.000.000đ</span>';
             }
 
             modal.style.display = 'flex';
@@ -1224,6 +1252,106 @@
                 closePaymentModal();
             }
         });
+
+        // --- GAME LOGIC ---
+        function openGameModal() {
+            document.getElementById('game-modal').style.display = 'flex';
+        }
+
+        function closeGameModal() {
+            document.getElementById('game-modal').style.display = 'none';
+        }
+
+        function submitGame() {
+            const url = document.getElementById('share-url').value;
+            if (!url) {
+                alert('Vui lòng nhập link bài viết!');
+                return;
+            }
+
+            const btn = document.getElementById('btn-game-submit');
+            btn.innerHTML = '<i data-lucide="loader" class="spin"></i> Đang kiểm tra...';
+            btn.disabled = true;
+            lucide.createIcons();
+
+            // Call API
+            fetch(GAS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'play_game', url: url })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    btn.innerHTML = 'Kiểm Tra & Nhận Code';
+                    btn.disabled = false;
+
+                    if (data.success) {
+                        document.getElementById('game-step-1').style.display = 'none';
+                        document.getElementById('game-step-success').style.display = 'block';
+                        document.getElementById('voucher-code-display').innerText = data.code;
+                    } else {
+                        alert('Lỗi: ' + data.message);
+                    }
+                })
+                .catch(err => {
+                    alert('Lỗi kết nối: ' + err);
+                    btn.disabled = false;
+                    btn.innerHTML = 'Kiểm Tra & Nhận Code';
+                });
+        }
+
+        function useVoucherNow() {
+            const code = document.getElementById('voucher-code-display').innerText;
+            closeGameModal();
+            // Mặc định mở gói VIP khi user dùng code xong (upsell)
+            openPaymentModal('vip');
+            // Auto fill discount
+            document.getElementById('discount-code').value = code;
+            applyDiscount();
+        }
+
+        function applyDiscount() {
+            const code = document.getElementById('discount-code').value;
+            const msg = document.getElementById('discount-msg');
+            const pkgInput = document.getElementById('pkg-input').value;
+
+            if (!code) {
+                msg.innerText = '';
+                return;
+            }
+
+            msg.innerText = 'Đang kiểm tra...';
+            msg.style.color = '#text-sub';
+
+            fetch(GAS_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify({ action: 'check_discount', code: code })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        msg.innerText = data.message;
+                        msg.style.color = '#10b981';
+
+                        // Update Price Display
+                        let newPrice = '';
+                        if (pkgInput === 'basic') newPrice = '499.000đ';
+                        else newPrice = '699.000đ';
+
+                        let oldPrice = '';
+                        if (pkgInput === 'basic') oldPrice = '2.150.000đ';
+                        else oldPrice = '3.000.000đ';
+
+                        document.getElementById('pkg-price-display').innerHTML =
+                            `<span style="text-decoration:line-through; color:#666; font-size:14px; margin-right:5px">${oldPrice}</span> ${newPrice}`;
+                    } else {
+                        msg.innerText = data.message;
+                        msg.style.color = '#ea580c';
+                    }
+                })
+                .catch(err => msg.innerText = 'Lỗi kiểm tra.');
+        }
 
     </script>
 </body>
