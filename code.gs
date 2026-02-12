@@ -473,16 +473,24 @@ function handleGameSubmission(postUrl) {
         return { success: false, message: 'Bạn chưa share đúng bài viết quy định hoặc để chế độ riêng tư.' };
     }
     
-    console.log('✅ [Game] 4. Share Validated.');
+    // 3. Extract Sharer Info (Author of the sharing post)
+    // API facebook-scraper thường trả về `user` hoặc `author` cho bài post chính
+    var sharerId = (postData.user && postData.user.id) || (postData.author && postData.author.id) || 'unknown';
+    var sharerName = (postData.user && postData.user.name) || (postData.author && postData.author.name) || 'Unknown';
 
-    // 3. Tạo/Lấy Voucher
-    // Dùng ID bài viết của người share làm mã code (đảm bảo duy nhất mỗi bài 1 code)
-    var voucherCode = 'SHARE_' + postData.post_id; 
+    console.log('✅ [Game] 4. Share Validated. Sharer:', sharerName, sharerId);
+
+    // 4. Tạo/Lấy Voucher
+    var discountCode = 'SHARE_' + postData.post_id; 
     
-    // Lưu vào Sheet Vouchers
-    saveVoucher(voucherCode);
+    // Lưu vào Sheet Vouchers (kèm logic check duplicate user)
+    var saveResult = saveVoucher(discountCode, sharerId, sharerName);
     
-    return { success: true, code: voucherCode };
+    if (saveResult.success) {
+       return { success: true, code: saveResult.code };
+    } else {
+       return { success: false, message: saveResult.message };
+    }
 
   } catch (e) {
     console.log('❌ [Game] Error:', e.toString());
@@ -490,25 +498,40 @@ function handleGameSubmission(postUrl) {
   }
 }
 
-function saveVoucher(code) {
+function saveVoucher(code, authorId, authorName) {
   var ss = SpreadsheetApp.openById('1FylWgwlHxW39HPIIVTgtb2rnCzu-fEnnBMmHRNLzN8o');
   var sheet = ss.getSheetByName('Vouchers') || ss.insertSheet('Vouchers');
   
   if (sheet.getLastRow() === 0) {
-    sheet.appendRow(['Code', 'Status', 'CreatedAt', 'UsedAt', 'UsedBy']);
+    sheet.appendRow(['Code', 'Status', 'CreatedAt', 'UsedAt', 'UsedBy', 'AuthorID', 'AuthorName']);
   }
   
-  // Check if exists
   var data = sheet.getDataRange().getValues();
+  
+  // 1. Check if AuthorID already received a code (Limit 1 code per user)
+  if (authorId && authorId !== 'unknown') {
+    for (var i = 1; i < data.length; i++) {
+        // Column F (index 5) is AuthorID
+        if (data[i][5] == authorId) {
+            console.log('ℹ️ [Voucher] User already has code:', authorId);
+            // Return existing code
+            return { success: true, code: data[i][0], message: 'Existing code returned' };
+        }
+    }
+  }
+
+  // 2. Check if Code exists (Duplicate Post - should be caught by author check usually, but good fallback)
   for (var i = 1; i < data.length; i++) {
     if (data[i][0] == code) {
        console.log('ℹ️ [Voucher] Code already exists:', code);
-       return; // Đã tồn tại -> Không tạo mới (User có thể lấy lại code cũ từ bài share đó)
+       return { success: true, code: code, message: 'Existing code returned' };
     }
   }
   
-  sheet.appendRow([code, 'Active', new Date(), '', '']);
-  console.log('✅ [Voucher] Created new code:', code);
+  // Create New
+  sheet.appendRow([code, 'Active', new Date(), '', '', authorId, authorName]);
+  console.log('✅ [Voucher] Created new code:', code, 'for', authorName);
+  return { success: true, code: code, message: 'New code created' };
 }
 
 function validateAndUseVoucher(code) {
