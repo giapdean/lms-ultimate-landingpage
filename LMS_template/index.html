@@ -1033,6 +1033,62 @@
         </div>
     </div>
 
+    <!-- MINIGAME MODAL -->
+    <div id="game-modal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="close" onclick="closeGameModal()">&times;</span>
+            <div style="text-align: center; margin-bottom: 24px;">
+                <h2 style="margin: 0; color: #F59E0B; text-transform: uppercase; letter-spacing: 1px;">Săn Mã Giảm Giá
+                    76.7%</h2>
+                <p style="color: var(--text-sub); margin-top: 8px;">Dành riêng cho khách hàng chia sẻ lan tỏa giá trị
+                </p>
+            </div>
+
+            <div id="game-step-1">
+                <div
+                    style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 24px; text-align: left;">
+                    <p style="color: white; margin-bottom: 15px; font-weight: bold;">📝 Thể lệ:</p>
+                    <ol style="color: var(--text-sub); margin: 0; padding-left: 20px; line-height: 1.6;">
+                        <li>Share bài viết này ở chế độ <strong>Công Khai (Public)</strong> trên Facebook cá nhân.</li>
+                        <li><a href="https://www.facebook.com/share/p/1BaxUeHiLF/" target="_blank"
+                                style="color: #3b82f6; text-decoration: underline;">Link bài viết cần Share (Bấm vào
+                                đây)</a></li>
+                        <li>Copy link bài viết <strong>bạn vừa share</strong> và dán vào ô bên dưới.</li>
+                        <li>Hệ thống kiểm tra tự động. Nếu hợp lệ, bạn nhận ngay Code giảm giá.</li>
+                    </ol>
+                </div>
+
+                <div style="margin-bottom: 24px;">
+                    <label style="display: block; color: var(--text-sub); margin-bottom: 8px; font-size: 14px;">Link bài
+                        share của bạn:</label>
+                    <input type="text" id="share-url" placeholder="https://www.facebook.com/..."
+                        style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border); background: #000; color: white;">
+                </div>
+
+                <button onclick="submitGame()" id="btn-game-submit" class="btn btn-primary"
+                    style="width: 100%; background: linear-gradient(90deg, #F59E0B, #D97706);">
+                    Kiểm Tra & Nhận Code
+                </button>
+            </div>
+
+            <div id="game-step-success" style="display: none; text-align: center; animation: fadeIn 0.5s;">
+                <div style="font-size: 50px; margin-bottom: 10px;">🎉</div>
+                <h3 style="color: #10b981; margin-bottom: 10px;">Chúc Mừng!</h3>
+                <p style="color: var(--text-sub);">Bạn đã nhận được Mã Giảm Giá 76.7%</p>
+
+                <div
+                    style="background: #10b981; color: white; padding: 15px; border-radius: 8px; font-size: 24px; font-weight: bold; margin: 20px 0; letter-spacing: 2px; border: 2px dashed rgba(255,255,255,0.5);">
+                    <span id="voucher-code-display">CODE123</span>
+                </div>
+
+                <p style="color: var(--text-sub); font-size: 13px; margin-bottom: 20px;">Copy mã này và nhập vào bước
+                    Thanh Toán nhé!</p>
+
+                <button onclick="useVoucherNow()" class="btn btn-primary" style="width: 100%;">Dùng Luôn</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Lightbox Modal -->
     <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
         <div class="lightbox-content">
